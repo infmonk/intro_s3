@@ -1,0 +1,195 @@
+---
+title: "Object Oriented Programming in R"
+subtitle: "An Introduction to S3"
+author: "Lukas Huwiler"
+date: "November 25, 2020"
+header-includes:
+  - \usepackage{tikz}
+  - \usepackage{tikz-uml}
+  - \usetikzlibrary{arrows.meta}
+  - \newcommand{\R}{\textsf{R}}
+output:
+  beamer_presentation:
+    theme: "Pittsburgh"
+    colortheme: "seahorse"
+    fonttheme: "structurebold"
+---
+
+
+# A \textit{Very} Short Introduction to Object Oriented Programming
+
+## Object Oriented Programming (OOP) is \dots
+
+- \dots \textit{the} dominant programming paradigm since the 90s
+- \dots a way to abstract and code
+- \dots all about keeping data and behaviour together
+
+## Speaking Object Oriented
+
+\begin{columns}[T]
+\begin{column}{.4\textwidth}
+\begin{minipage}[t]{\textwidth}
+\includegraphics[width=\textwidth]{img/car.png}
+\end{minipage}
+\end{column}%
+\hfill%
+\begin{column}{.6\textwidth}
+\begin{itemize} 
+  \item It's a car $\rightarrow$ It's an \textit{instance} or \textit{object} of \textit{class} car
+  \item It's a \textit{grey} car $\rightarrow$ The class car has an \textit{attribute} \texttt{colour} (data)
+  \item A car can \textit{drive} $\rightarrow$ The class car has a \textit{method} \texttt{drive} (behaviour)
+\end{itemize}
+\end{column}%
+\end{columns}
+
+## Class Hierarchies
+
+\begin{columns}[T]
+\begin{column}{.4\textwidth}
+\begin{minipage}[t]{\textwidth}
+\begin{tikzpicture}
+  \umlclass[type=abstract,x=2]{Vehicle}{+ color: string}{+ drive(to)}
+  \node[inner sep=0pt] (car) at (0,-4) {\includegraphics[width=.5\textwidth]{img/car.png}};
+  \node[inner sep=0pt] (tuktuk) at (4,-4) {\includegraphics[width=.5\textwidth]{img/tuktuk.png}};
+  \draw[-{Triangle[open,length=3mm,width=3mm]}, thick] (tuktuk.north) -- ([xshift=20pt,yshift=-2pt]Vehicle.south);
+  \draw[-{Triangle[open,length=3mm,width=3mm]}, thick] (car.north) -- ([xshift=-20pt,yshift=-2pt]Vehicle.south);
+\end{tikzpicture}
+\end{minipage}
+\end{column}%
+\hfill%
+\begin{column}{.6\textwidth}
+\begin{itemize} 
+  \item Cars and rickshaws are vehicles $\rightarrow$ Cars and rickshaws \textit{inherit} from Vehicle 
+  \item You will never see a vehicle (only types of vehicles) $\rightarrow$ Vehicle is an \textit{abstract class}
+  \item \dots and this is not just a diagram, it's an UML class diagram $\rightarrow$ OOP even has it's own graphical representation language
+\end{itemize}
+\end{column}%
+\end{columns}
+
+
+
+# OOP in R
+
+## It's a Mess!
+
+\R has three (or even four) different class systems:
+
+\begin{columns}[T]
+\begin{column}{0.6\textwidth}
+\begin{itemize}
+  \item \textbf{S3:} oldest class system; very simple but elegant; comes with some limitations
+  \item \textbf{S4:} more formal; adds multiple dispatch and type checks
+  \item \textbf{R5:} Reference classes; feels similar to C++, Java, or Python; reference semantics
+  \item \textbf{(R6):} the unofficial (but better?) implementation of R5
+\end{itemize}
+\end{column}
+\hfill
+\begin{column}{0.4\textwidth}
+
+\end{column}
+\end{columns}
+\vfill
+We will focus on S3 for this talk\dots
+
+## It's a Mess!
+
+\R has three (or even four) different class systems:
+
+\begin{columns}[T]
+\begin{column}{0.6\textwidth}
+\begin{itemize}
+  \item \textbf{S3:} oldest class system; very simple but elegant; comes with some limitations
+  \item \textbf{S4:} more formal; adds multiple dispatch and type checks
+  \item \textbf{R5:} Reference classes; feels similar to C++, Java, or Python; reference semantics
+  \item \textbf{(R6):} the unofficial (but better?) implementation of R5
+\end{itemize}
+\end{column}
+\hfill
+\begin{column}{0.4\textwidth}
+\begin{tikzpicture}
+  \node[inner sep=0pt] (noop) at (0,0) {\textit{not really object oriented}};
+  \node[inner sep=0pt] (oop) at (0,-4) {\textit{object oriented}};
+  \draw[<->, thick] ([yshift=-2pt]noop.south) -- ([yshift=2pt]oop.north);
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\vfill
+We will focus on S3 for this talk\dots
+
+# The S3 Class System
+
+## Have You Ever Wondered?
+
+```{r, echo=FALSE}
+knitr::raw_latex("\\begin{tiny}\\begin{columns}[T]\n\\begin{column}{.65\\textwidth}\n")
+car_model <- lm(mpg ~ hp, data = mtcars)
+```
+```{r}
+summary(car_model)
+```
+```{r, echo=FALSE}
+knitr::raw_latex("\\end{column}\n\\begin{column}{.4\\textwidth}\n")
+```
+```{r}
+summary("It's all about cars")
+summary(mtcars[1:2])
+summary(table(mtcars$cyl))
+summary(as.factor(mtcars$cyl))
+```
+```{r, echo=FALSE}
+knitr::raw_latex("\\end{column}\n\\end{columns}\\end{tiny}")
+```
+
+The mechanism why summary works for (almost) everything is called \textit{method dispatch}
+
+## How Method Dispatch Works
+
+\scriptsize
+```{r}
+class(mtcars)
+attr(car_model, "class")
+summary
+methods(summary)[1:16]
+```
+
+## Create Your Own Generic Method
+
+\scriptsize
+```{r}
+# Define methods
+drive <- function(x) {
+  UseMethod("drive", x)
+}
+
+drive.Car <- function(x) {
+  print("brumm, brumm")
+}
+
+drive.Rikshaw <- function(x) {
+  print("tuk, tuk")
+}
+
+# Instantiate objects
+car <- structure(list(color = "grey"), class = "Car")
+tuktuk <- structure(list(color = "blue"), class = "Rikshaw")
+
+# Call generic methods
+drive(car)
+drive(tuktuk)
+```
+
+## Class Hierarchies in S3
+
+```{r}
+paint <- function(x, color) {
+  UseMethod("paint")
+}
+
+paint.Vehicle <- function(x, color) {
+  x$color <- color
+  x
+}
+
+class(car) <- c("Vehicle", "Car")
+paint(car, color = "pink")
+```
