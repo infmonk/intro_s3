@@ -180,6 +180,7 @@ drive(tuktuk)
 
 ## Class Hierarchies in S3
 
+\scriptsize
 ```{r}
 paint <- function(x, color) {
   UseMethod("paint")
@@ -189,7 +190,26 @@ paint.Vehicle <- function(x, color) {
   x$color <- color
   x
 }
-
-class(car) <- c("Vehicle", "Car")
+# Java developers start sweating here
+class(car) <- c("Car", "Vehicle")
 paint(car, color = "pink")
+```
+
+## Class Hierarchies in S3
+
+\scriptsize
+```{r}
+paint.Car <- function(x, color) {
+  painted_car <- NextMethod() # print.Vehicle method does the basics
+  print("Additionally we'll change the seat's color")
+  painted_car
+}
+
+paint(car, "black")
+
+paint.default <- function(x, color) {
+  sprintf("How am I supposed to paint %s?", as.character(x))
+}
+
+paint(2, "red")
 ```
