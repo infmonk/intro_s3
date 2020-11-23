@@ -213,3 +213,32 @@ paint.default <- function(x, color) {
 
 paint(2, "red")
 ```
+
+## S3 in the Field
+
+It's a good idea to write constructors for your S3 class:
+
+\scriptsize
+```{r}
+new_Car <- function(color) {
+  structure(list(color = color), class = c("Car", "Vehicle"))
+}
+
+validate_Car <- function(x) {
+  if (!inherits(x$color, "character")) {
+    stop("color has to be of class character", .call = TRUE) 
+  }
+  x
+}
+
+Car <- function(color = "black") {
+  car <- new_Car(color)
+  validate_Car(car)
+  car
+}
+```
+
+## The End
+
+\Huge
+Questions?
