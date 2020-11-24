@@ -15,14 +15,7 @@ output:
     fonttheme: "structurebold"
 ---
 
-
 # A \textit{Very} Short Introduction to Object Oriented Programming
-
-## Object Oriented Programming (OOP) is \dots
-
-- \dots \textit{the} dominant programming paradigm since the 90s
-- \dots a way to abstract and code
-- \dots all about keeping data and behaviour together
 
 ## Speaking Object Oriented
 
@@ -36,7 +29,7 @@ output:
 \begin{column}{.6\textwidth}
 \begin{itemize} 
   \item It's a car $\rightarrow$ It's an \textit{instance} or \textit{object} of \textit{class} car
-  \item It's a \textit{grey} car $\rightarrow$ The class car has an \textit{attribute} \texttt{colour} (data)
+  \item It's a \textit{grey} car $\rightarrow$ The class car has an \textit{attribute} \texttt{color} (data)
   \item A car can \textit{drive} $\rightarrow$ The class car has a \textit{method} \texttt{drive} (behaviour)
 \end{itemize}
 \end{column}%
@@ -59,9 +52,9 @@ output:
 \hfill%
 \begin{column}{.6\textwidth}
 \begin{itemize} 
-  \item Cars and rickshaws are vehicles $\rightarrow$ Cars and rickshaws \textit{inherit} from Vehicle 
-  \item You will never see a vehicle (only types of vehicles) $\rightarrow$ Vehicle is an \textit{abstract class}
-  \item \dots and this is not just a diagram, it's an UML class diagram $\rightarrow$ OOP even has it's own graphical representation language
+  \item Cars and rickshaws are vehicles $\rightarrow$ Car and Rickshaw \textit{inherit} from Vehicle 
+  \item Car and Rickshaw are child classes of Vehicle
+  \item Vehicle is the parent class of Car and Rickshaw
 \end{itemize}
 \end{column}%
 \end{columns}
@@ -112,25 +105,26 @@ The mechanism why summary works for (almost) everything is called \textit{method
 \scriptsize
 ```{r}
 class(mtcars)
-attr(car_model, "class")
 summary
 methods(summary)[1:16]
 ```
 
 ## Create Your Own Generic Method
 
-\scriptsize
+\tiny
 ```{r}
 # Define methods
 drive <- function(x, location) UseMethod("drive", x)
 
 drive.Car <- function(x, location) {
+  cat("drive car...\n")
   x$location <- location
   x$gas <- pmax(x$gas - 10, 0)
   x
 }
 
-drive.Rikshaw <- function(x, location) {
+drive.Rickshaw <- function(x, location) {
+  cat("drive rickshaw...\n")
   x$location <- location
   x
 }
@@ -138,38 +132,41 @@ drive.Rikshaw <- function(x, location) {
 # Instantiate objects
 car <- structure(list(color = "grey", location = "Zurich", gas = 100), 
                  class = "Car")
-tuktuk <- list(color = "blue", location = "Munich")
-class(tuktuk) <- "Rikshaw"
-
+rickshaw <- list(color = "blue", location = "Munich")
+class(rickshaw) <- "Rickshaw"
+```
+```{r}
 # Call generic methods
 car <- drive(car, "Lucerne")
-tuktuk <- drive(tuktuk, "Lucerne")
+rickshaw <- drive(rickshaw, "Lucerne")
 ```
 
 ## Class Hierarchies in S3
 
-\scriptsize
+\tiny
 ```{r}
-# Make the objects inheriting from Vehicle
+# Make the objects inheriting from Vehicle (don't show this to a Java developer)
 class(car) <- c("Car", "Vehicle")
-class(tuktuk) <- c("Rikshaw", "Vehicle")
-rm(drive.Rikshaw)
+class(rickshaw) <- c("Rickshaw", "Vehicle")
+rm(drive.Rickshaw)
 
 drive.Vehicle <- function(x, location) {
+  cat("Change location...\n")
   x$location <- location
   x
 }
 
 drive.Car <- function(x, location) {
   x <- NextMethod()
+  cat("Consume gasoline...\n")
   x$gas <- pmax(x$gas - 10, 0)
   x
 }
-
-car <- drive(car, "Lucerne")
-tuktuk <- drive(tuktuk, "Lucerne")
 ```
-
+```{r}
+car <- drive(car, "Lucerne")
+rickshaw <- drive(rickshaw, "Lucerne")
+```
 
 ## Some Additional Points
 
@@ -182,35 +179,13 @@ drive.default <- function(x, location) {
 
 drive(2, "Lucerne")
 
-#That's how you check if an object inherits from a specific class:
-if (inherits(car, "Vehicle")) {
-  print("It's a Vehicle")
-}
-
 # The package sloop offers some nice functions for a better understanding:
 sloop::s3_dispatch(drive(car, "Zurich"))
-```
 
-## Make it Easy for the User
-
-It's a good idea to write constructors for your S3 class:
-
-\scriptsize
-```{r}
-new_Car <- function(color) {
-  structure(list(color = color), class = c("Car", "Vehicle"))
-}
-
-validate_Car <- function(x) {
-  if (!inherits(x$color, "character")) {
-    stop("color has to be of class character", .call = TRUE) 
-  }
-  x
-}
-
-Car <- function(color = "black") {
-  car <- new_Car(color)
-  validate_Car(car)
+# It's a good idea to write constructors for your S3 class:
+Car <- function(location, color = "black", gas_level = 100) {
+  car <- list(color = color, location = location, gas = gas)
+  class(car) <- c("Car", "Vehicle")
   car
 }
 ```
