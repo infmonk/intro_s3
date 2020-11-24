@@ -66,55 +66,20 @@ output:
 \end{column}%
 \end{columns}
 
-
-
 # OOP in R
 
 ## It's a Mess!
 
 \R has three (or even four) different class systems:
 
-\begin{columns}[T]
-\begin{column}{0.6\textwidth}
 \begin{itemize}
   \item \textbf{S3:} oldest class system; very simple but elegant; comes with some limitations
   \item \textbf{S4:} more formal; adds multiple dispatch and type checks
   \item \textbf{R5:} Reference classes; feels similar to C++, Java, or Python; reference semantics
   \item \textbf{(R6):} the unofficial (but better?) implementation of R5
 \end{itemize}
-\end{column}
-\hfill
-\begin{column}{0.4\textwidth}
-
-\end{column}
-\end{columns}
 \vfill
-We will focus on S3 for this talk\dots
-
-## It's a Mess!
-
-\R has three (or even four) different class systems:
-
-\begin{columns}[T]
-\begin{column}{0.6\textwidth}
-\begin{itemize}
-  \item \textbf{S3:} oldest class system; very simple but elegant; comes with some limitations
-  \item \textbf{S4:} more formal; adds multiple dispatch and type checks
-  \item \textbf{R5:} Reference classes; feels similar to C++, Java, or Python; reference semantics
-  \item \textbf{(R6):} the unofficial (but better?) implementation of R5
-\end{itemize}
-\end{column}
-\hfill
-\begin{column}{0.4\textwidth}
-\begin{tikzpicture}
-  \node[inner sep=0pt] (noop) at (0,0) {\textit{not really object oriented}};
-  \node[inner sep=0pt] (oop) at (0,-4) {\textit{object oriented}};
-  \draw[<->, thick] ([yshift=-2pt]noop.south) -- ([yshift=2pt]oop.north);
-\end{tikzpicture}
-\end{column}
-\end{columns}
-\vfill
-We will focus on S3 for this talk\dots
+I will focus on S3 in this talk\dots
 
 # The S3 Class System
 
@@ -157,64 +122,76 @@ methods(summary)[1:16]
 \scriptsize
 ```{r}
 # Define methods
-drive <- function(x) {
-  UseMethod("drive", x)
+drive <- function(x, location) UseMethod("drive", x)
+
+drive.Car <- function(x, location) {
+  x$location <- location
+  x$gas <- pmax(x$gas - 10, 0)
+  x
 }
 
-drive.Car <- function(x) {
-  print("brumm, brumm")
-}
-
-drive.Rikshaw <- function(x) {
-  print("tuk, tuk")
+drive.Rikshaw <- function(x, location) {
+  x$location <- location
+  x
 }
 
 # Instantiate objects
-car <- structure(list(color = "grey"), class = "Car")
-tuktuk <- structure(list(color = "blue"), class = "Rikshaw")
+car <- structure(list(color = "grey", location = "Zurich", gas = 100), 
+                 class = "Car")
+tuktuk <- list(color = "blue", location = "Munich")
+class(tuktuk) <- "Rikshaw"
 
 # Call generic methods
-drive(car)
-drive(tuktuk)
+car <- drive(car, "Lucerne")
+tuktuk <- drive(tuktuk, "Lucerne")
 ```
 
 ## Class Hierarchies in S3
 
 \scriptsize
 ```{r}
-paint <- function(x, color) {
-  UseMethod("paint")
-}
+# Make the objects inheriting from Vehicle
+class(car) <- c("Car", "Vehicle")
+class(tuktuk) <- c("Rikshaw", "Vehicle")
+rm(drive.Rikshaw)
 
-paint.Vehicle <- function(x, color) {
-  x$color <- color
+drive.Vehicle <- function(x, location) {
+  x$location <- location
   x
 }
-# Java developers start sweating here
-class(car) <- c("Car", "Vehicle")
-paint(car, color = "pink")
+
+drive.Car <- function(x, location) {
+  x <- NextMethod()
+  x$gas <- pmax(x$gas - 10, 0)
+  x
+}
+
+car <- drive(car, "Lucerne")
+tuktuk <- drive(tuktuk, "Lucerne")
 ```
 
-## Class Hierarchies in S3
+
+## Some Additional Points
 
 \scriptsize
 ```{r}
-paint.Car <- function(x, color) {
-  painted_car <- NextMethod() # print.Vehicle method does the basics
-  print("Additionally we'll change the seat's color")
-  painted_car
+# You can define a default method as a fallback option:
+drive.default <- function(x, location) {
+  sprintf("An instance of class %s cannot drive...", class(x))
 }
 
-paint(car, "black")
+drive(2, "Lucerne")
 
-paint.default <- function(x, color) {
-  sprintf("How am I supposed to paint %s?", as.character(x))
+#That's how you check if an object inherits from a specific class:
+if (inherits(car, "Vehicle")) {
+  print("It's a Vehicle")
 }
 
-paint(2, "red")
+# The package sloop offers some nice functions for a better understanding:
+sloop::s3_dispatch(drive(car, "Zurich"))
 ```
 
-## S3 in the Field
+## Make it Easy for the User
 
 It's a good idea to write constructors for your S3 class:
 
@@ -238,7 +215,7 @@ Car <- function(color = "black") {
 }
 ```
 
-## The End
+##
 
 \Huge
 Questions?
